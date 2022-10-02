@@ -1,38 +1,87 @@
 import { response, Router } from "express";
 import responses from "../helpers/responses.js";
-import conn from "../main.js";
 import userSchema from "../schemas/user.schema.js";
+import userUpdateSchema from "../schemas/userUpdate.schema.js";
 import bcrypt from "bcrypt";
+import { PrismaClient } from "@prisma/client";
+import userLoginSchema from "../schemas/userLogin.schema.js";
+
+const prisma = new PrismaClient();
 
 const userRouter = Router();
 
-userRouter.get("/", (req, res) => {
-  const sql = "SELECT * FROM users;";
-  conn.query(sql, (err, result) => {
-    if (err) responses.badRequest(res, err);
-    return responses.success(res, "Test Get users", result);
-  });
-}); // TODO get all users
-
-userRouter.post("/", (req, res) => {
+userRouter.post("/", async (req, res) => {
   const { error, value } = userSchema.validate(req.body);
+  const { firstname, lastname, email, password } = value;
   if (error) return responses.badRequest(res, error.details[0].message);
-  const { name, email, password } = value;
-  const hashedPasword = bcrypt.hashSync(
+  const emailExist = await prisma.user.findUnique({ where: { email: email } });
+  if (emailExist) return responses.badRequest(res, "Email already exist");
+
+  const hashedPassword = bcrypt.hashSync(
     password,
     parseInt(process.env.SALT_ROUNDS)
   );
-
-  const sql = "INSERT INTO users(name,email,password) VALUES(?,?,?)";
-  conn.query(sql, [name, email, hashedPasword], (err, result) => {
-    if (err) throw err;
-    console.log("Inserted 1 row");
-    console.log(result);
+  // create user in the database
+  const user = await prisma.user.create({
+    data: {
+      firstname,
+      lastname,
+      password: hashedPassword,
+      email,
+    },
   });
-  return responses.success(res, "User Created Successfully!", value);
+
+  return responses.success(res, "User created successfully!", user);
 });
-userRouter.put("/", (req, res) => {}); // TODO update a user
-userRouter.delete("/", (req, res) => {}); // TODO delete a user
-userRouter.post("/login", (req, res) => {}); // TODO login user
+
+userRouter.get("/", async (req, res) => {
+  const users = await prisma.user.findMany({});
+  return responses.success(res, "Users fetched successfully!", users);
+});
+
+userRouter.get("/", async (req, res) => {}); // TODO get user by ID
+
+userRouter.put("/:userId", async (req, res) => {
+  const { error, value } = userUpdateSchema.validate(req.body);
+  if (error) return responses.badRequest(res, error.details[0].message);
+  const userId = req.params.userId;
+  const userExist = await prisma.user.findUnique({ where: { id: +userId } });
+  if (!userExist) return responses.notFound(res, "Id doesn't exist!");
+
+  const userUpdated = await prisma.user.update({
+    where: {
+      id: +userId,
+    },
+    data: value,
+  });
+
+  const { password, ...rest } = userUpdated;
+  return responses.success(res, "User updated successfully!", rest);
+});
+
+userRouter.delete("/:userId", async (req, res) => {
+  const userId = req.params.userId;
+  const userExist = await prisma.user.findUnique({ where: { id: +userId } });
+  if (!userExist) return responses.notFound(res, "Id doesn't exist!");
+  const userDeleted = await prisma.user.delete({
+    where: { id: +userId },
+  });
+
+  return responses.success(res, "User deleted successfully!", userDeleted);
+});
+
+userRouter.post("/login", async (req, res) => {
+  const { error, value } = userLoginSchema.validate(req.body);
+  if (error) return responses.badRequest(res, error.details[0].message);
+  const { email, password } = value;
+  const userExist = await prisma.user.findUnique({ where: { email: email } });
+  if (!userExist) return responses.notFound(res, "Email doesn't exists");
+  const match = bcrypt.compareSync(password, userExist.password);
+  if (!match) {
+    return responses.badRequest(res, "Invalid crediantials!");
+  }
+  const { password: hashedPassword, ...restData } = userExist;
+  return responses.success(res, "Logged in successfully!", restData);
+});
 
 export default userRouter;

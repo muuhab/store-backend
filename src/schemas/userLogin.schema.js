@@ -1,16 +1,6 @@
 import Joi from "joi";
 
-const userSchema = Joi.object({
-  firstname: Joi.string()
-    .min(3)
-    .max(40)
-    .regex(/^[a-z ,.']+$/i)
-    .required(),
-  lastname: Joi.string()
-    .min(3)
-    .max(40)
-    .regex(/^[a-z ,.']+$/i)
-    .required(),
+const userLoginSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string()
     .min(8)
@@ -22,4 +12,4 @@ const userSchema = Joi.object({
     }),
 });
 
-export default userSchema;
+export default userLoginSchema;

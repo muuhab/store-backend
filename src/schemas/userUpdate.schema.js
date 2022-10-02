@@ -1,20 +1,16 @@
 import Joi from "joi";
 
-const userSchema = Joi.object({
+const userUpdateSchema = Joi.object({
   firstname: Joi.string()
     .min(3)
     .max(40)
-    .regex(/^[a-z ,.']+$/i)
-    .required(),
+    .regex(/^[a-z ,.']+$/i),
   lastname: Joi.string()
     .min(3)
     .max(40)
-    .regex(/^[a-z ,.']+$/i)
-    .required(),
-  email: Joi.string().email().required(),
+    .regex(/^[a-z ,.']+$/i),
   password: Joi.string()
     .min(8)
-    .required()
     .regex(/^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/)
     .messages({
       "object.regex":
@@ -22,4 +18,4 @@ const userSchema = Joi.object({
     }),
 });
 
-export default userSchema;
+export default userUpdateSchema;
