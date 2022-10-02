@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import morgan from "morgan";
-import errorHandler from "./src/middlewares/errorHandller.js";
+import errorHandler from "./middlewares/errorHandller.js";
 
 const app = express(); // create express app
 
