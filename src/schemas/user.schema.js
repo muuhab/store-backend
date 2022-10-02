@@ -9,10 +9,11 @@ const userSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string()
     .min(8)
-    .regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/)
+    .required()
+    .regex(/^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/)
     .messages({
       "object.regex":
-        "Minimum eight characters, at least one letter and one number",
+        "Minimum eight characters, at least one upper case, one lower case, one number and one special character",
     }),
 });
 
